@@ -6,10 +6,13 @@ void clear(char *buffer, int length); //Fungsi untuk mengisi buffer dengan 0
 
 int main() {
   //Test
-  char Test[3];
+  char Test[30];
   Test[0] = 'T';
   Test[1] = 'H';
   Test[2] = 'E';
+  printString(&Test);
+
+  readString(&Test);
   printString(&Test);
   
   makeInterrupt21();
@@ -28,16 +31,25 @@ void printString(char *string){
   interrupt(0x10,ah+13,0,0,0); //+13 untuk membaca 'enter'.
 }
 
-void readString(char* string){
-  int ah= 0*16*16; // AH di set 00 untuk read character.
-  int i = 0;
-  int al;
-  while(*(string+i) != 13){ //Input bukan enter
-    al = *(string+i);
-    interrupt(0x16, ah+al, 0, 0, 0);
-    i++; //iterate
+// void readString(char* string){
+//   int ah= 0*16*16; // AH di set 00 untuk read character.
+//   int i = 0;
+//   int al;
+//   while(*(string+i) != 13){ //Input bukan enter
+//     al = *(string+i);
+//     interrupt(0x16, ah+al, 0, 0, 0);
+//     i++; //iterate
+//   }
+//   interrupt(0x16, ah+al, 0, 0, 0);
+// }
+
+void readString(char *string) {
+  char *cc = string;
+  while(*(cc-1) != 13 && *(cc-1) != '\n') {  // input bukan enter
+    *cc = interrupt(0x16, 0, 0, 0, 0);  // input dimasukkan ke dalam variabel string lewat pointer
+    cc++;
   }
-  interrupt(0x16, ah+al, 0, 0, 0);
+  *(cc-1) = '\0'; // masukkan NULL character ke akhir string
 }
 
 void handleInterrupt21 (int AX, int BX, int CX, int DX){

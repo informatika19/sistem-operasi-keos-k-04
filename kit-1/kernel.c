@@ -43,6 +43,14 @@ void readString(char *string) {
   *(cc-1) = '\0'; // masukkan NULL character ke akhir string
 }
 
+void clear(char *buffer, int length){
+  int i = 0;
+  while(i < length){
+    buffer[i]='\0';
+    i++;
+  }
+}
+
 void handleInterrupt21 (int AX, int BX, int CX, int DX){
   switch (AX) {
     case 0x0:

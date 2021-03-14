@@ -7,7 +7,6 @@ void printString(char *string);
 void printStringLength(char *string, int length);
 void printStringToNumLength(char *string, int length);
 void readString(char *string);
-void writeString();
 void clear(char *buffer, int length); //Fungsi untuk mengisi buffer dengan 0
 void asciiPrint();
 
@@ -22,11 +21,14 @@ void writeFile(char *buffer, char *path, char parentIndex);
 void readFile(char *buffer, char *path, int *result, char parentIndex);
 void printFile(char* buffer, int file_idx);
 void printIsiFile(char* buffer, int file_idx);
-char searchParentIndex(char *path, char parentIndex);
-void listAll(char parentIndex);
+char search_current_index(char *path, char parentIndex);
+char search_parent_index(char current_index);
 
+void listAll(char parentIndex);
+void process_dotdot_inPath(char *path);
 int strcmp(char *str1, char *str2);
 void strcat(char *str1, char *str2);
+int strlen(char *str);
 
 char sector_map[512];
 char sector_file_1[512];
@@ -35,22 +37,20 @@ char sector_sectors[512];
 
 int main() {
   char read[512];
-  char current_path[200];
-  int idx_curr_path = 1;
-  char parentIndex = 0xFF;
+  char current_path[100];
+  char history[1000];
+  // int idx_curr_path = 1;
+  char current_index = 0xFF;
+  char old_current_index;
 
   initialize_array(current_path, "/\0");
 
-  // clear(read, 512);
+  clear(read, 512);
   writeSector(read, 10);
   writeSector(read, 11);
   writeSector(read, 12);
   writeSector(read, 13);
 
-  // clear(sector_map, 512);
-  // clear(sector_file_1, 512);
-  // clear(sector_file_2, 512);
-  // clear(sector_sectors, 512);
   readSector(sector_map, 10);
   readSector(sector_file_1, 11);
   readSector(sector_file_2, 12);
@@ -69,15 +69,15 @@ int main() {
   // printString(read);
   // printString("\n");
 
-  printString("---------------------\n");
+  // printString("---------------------\n");
   // interrupt(0x13, 0x02*16*16+0x01, 0x1000, 0x0*16*16+0x02, 0x0*16*16+0x0);
   // clear(read, 100);
   // readSector(read, 11);
   // printStringLength(read, 20);
   // printString("\n");
-  printString("Finished Test\n");
+  // printString("Finished Test\n");
 
-  clear(read, 16);
+  // clear(read, 16);
   initialize_array(read, "Isi File");
   makeFile(read, "parent1/parent2/parent3/anak.txt");
   makeFile(read, "parent1/parent2/parent3/anak2.txt");
@@ -90,18 +90,18 @@ int main() {
   // printString("\n");
 
   // printString("Sector 101\n");
-  clear(read, 512);
-  readSector(read, 11);
-  // printStringLength(read, 50);
+  // clear(read, 512);
+  // readSector(read, 11);
+  // // printStringLength(read, 50);
+  // // printString("\n");
+  // printFile(read, 0);
   // printString("\n");
-  printFile(read, 0);
-  printString("\n");
-  printFile(read, 0x10);
-  printString("\n");
-  printFile(read, 0x20);
-  printString("\n");
-  printFile(read, 0x30);
-  printString("\n");
+  // printFile(read, 0x10);
+  // printString("\n");
+  // printFile(read, 0x20);
+  // printString("\n");
+  // printFile(read, 0x30);
+  // printString("\n");
   // printString("Sector 102\n");
   // clear(read, 512);
   // readSector(read, 12);
@@ -111,18 +111,18 @@ int main() {
   // printString("\n");
 
   // printString("Sector 103\n");
-  clear(read, 512);
-  readSector(read, 13);
+  // clear(read, 512);
+  // readSector(read, 13);
   // printStringLength(read, 50);
   // printString("\n");
-  printIsiFile(read, 0*16);
-  printString("\n");
-  printIsiFile(read, 1*16);
-  printString("\n");
-  printIsiFile(read, 2*16);
-  printString("\n");
-  printIsiFile(read, 3*16);
-  printString("\n");
+  // printIsiFile(read, 0*16);
+  // printString("\n");
+  // printIsiFile(read, 1*16);
+  // printString("\n");
+  // printIsiFile(read, 2*16);
+  // printString("\n");
+  // printIsiFile(read, 3*16);
+  // printString("\n");
 
   // terminal
   printString("\n\n");
@@ -134,33 +134,46 @@ int main() {
     readString(read);
     printString("\n");
     if (strcmp(read, "ls")) {
-      printNum(parentIndex);
-      printString("\n");
-      listAll((char) parentIndex);
+      // printNum(current_index);
+      // printString("\n");
+      listAll((char) current_index);
 
     } else if (strcmp(read, "cd ")) {
       if (read[2] != '\0' || read[3] != '\0') {
         if (read[3] == '/') {
           // path dari root
-          *current_path = '\0';
-          strcat(current_path, &read[3]);
           if (read[4] != '\0') {
-            parentIndex = searchParentIndex(&read[4], 0xFF);
+            old_current_index = current_index;
+            current_index = search_current_index(&read[4], 0xFF);
+            // jika ada file yg tidak ketemu maka dilewati
+            if (old_current_index == current_index) {
+              continue;
+            }
           } else {
-            parentIndex = 0xFF;
+            current_index = 0xFF;
           }
+          // path mulai dari root
+          *current_path = '\0';
         } else {
           // path relatif
-          if (parentIndex != 0xFF) {
+          old_current_index = current_index;
+          current_index = search_current_index(&read[3], current_index);
+          // jika ada file yg tidak ketemu maka dilewati
+          if (old_current_index == current_index) {
+            continue;
+          } else {
+          }
+          if (old_current_index != 0xFF) {
             strcat(current_path, "/");
           }
-          parentIndex = searchParentIndex(&read[3], parentIndex);
-          strcat(current_path, &read[3]);
         }
+        // copy path terbaru
+        strcat(current_path, &read[3]);
+        process_dotdot_inPath(&current_path);
       }
 
     } else if (strcmp(read, "cat ")) {
-
+      
     } else {
       printString("Command not found\n");
     }
@@ -222,22 +235,13 @@ void printIsiFile(char* buffer, int file_idx) {
 }
 
 void readString(char *string) {
-  char *cc = string;
-  cc--;
+  char *cc = string-1;
   do {
     cc++;
     *cc = interrupt(0x16, 0, 0, 0, 0);  // input dimasukkan ke dalam variabel string lewat pointer
     interrupt(0x10, 0x0e00+*cc,0,0,0);
   } while(*(cc) != 13 && *(cc) != '\n');  // input bukan enter
   *cc = '\0'; // masukkan NULL character ke akhir string
-}
-
-void writeString() {
-  char cc;
-  while (cc != 13 || cc != '\n') {
-    cc = interrupt(0x16, 0, 0, 0, 0);
-    interrupt(0x10,0x0e00+cc,0,0,0);
-  }
 }
 
 void clear(char *buffer, int length){
@@ -341,17 +345,14 @@ void writeSector(char *buffer, int sector) {
   // interrupt(0x13, 0x0301, buffer, (cylinder << 2) + sector, (head << 2) + drive);
 }
 
-char searchParentIndex(char *path, char parentIndex) {
+char search_current_index(char *path, char current_index) {
   
+  char old_current_index = current_index;
+  char parentIndex;
   char folder_name[15];
   int idx_to_file;
   int idx_path = 0;
-  // int idx;
 
-  // clear(folder_name, 15);
-  // printStringLength(&parentIndex, 1);
-  printNum((int) parentIndex);
-  printString(" ");
   while (1) {
     // menyalin nama folder sampai folder selanjutnya atau menyalin nama file sampai titik
     idx_to_file = 0;
@@ -362,47 +363,110 @@ char searchParentIndex(char *path, char parentIndex) {
     }
     folder_name[idx_to_file] = '\0';
 
-
-    // mencari nama folder pada sector files yang akan menjadi parent bagi folder selanjutnya atau file selanjutnya
-    idx_to_file = 0;
-    while (idx_to_file < 32) {
-      if (sector_map[11+idx_to_file] == 0xFF && parentIndex == sector_file_1[idx_to_file*16] && 
-          strcmp(folder_name, &sector_file_1[idx_to_file*16+2])) {
-        break;
+    if (strcmp(folder_name, "..")) {
+      if (folder_name[1] != '\0') {
+        current_index = search_parent_index(current_index);
       }
-      printString("(");
-      printNum(sector_file_1[idx_to_file*16]);
-      printString(" ");
-      printString(folder_name);
-      printString("[");
-      printStringLength(&sector_file_1[idx_to_file*16+2], 14);
-      printString("]");
-      printNum(idx_to_file);
-      printString(")");
-      idx_to_file++;
-    }
-
-    // jika nama folder belum ketemu
-    if (idx_to_file == 32) {
-      while (idx_to_file < 64) {
-        if (sector_map[11+idx_to_file] == 0xFF && parentIndex == sector_file_2[idx_to_file*16 - 32*16] && 
-            strcmp(folder_name, &sector_file_2[idx_to_file*16 - 32*16 +2])) {
+    } else {
+      // mencari nama folder pada sector files yang akan menjadi parent bagi folder selanjutnya atau file selanjutnya
+      parentIndex = current_index;
+      idx_to_file = 0;
+      while (idx_to_file < 32) {
+        if (sector_map[11+idx_to_file] == 0xFF && parentIndex == sector_file_1[idx_to_file*16] && 
+            strcmp(folder_name, &sector_file_1[idx_to_file*16+2])) {
           break;
         }
         idx_to_file++;
       }
+
+      // jika nama folder belum ketemu
+      if (idx_to_file == 32) {
+        while (idx_to_file < 64) {
+          if (sector_map[11+idx_to_file] == 0xFF && parentIndex == sector_file_2[idx_to_file*16 - 32*16] && 
+              strcmp(folder_name, &sector_file_2[idx_to_file*16 - 32*16 +2])) {
+            break;
+          }
+          idx_to_file++;
+        }
+      }
+
+      // jika nama folder sudah ketemu
+      // index dari folder tersebut ketemu
+      if (idx_to_file < 64) {
+        current_index = idx_to_file;
+      } else {
+        // jika tidak ketemu maka kembalikan nilai current index lalu return
+        return old_current_index;
+      }
     }
 
-    printString("parent: ");
-    printNum(idx_to_file);
-    printString("\n");
-    // jika nama folder sudah ketemu
-    parentIndex = idx_to_file;
 
     if (path[idx_path] == '\0') break;
     idx_path++;
   }
-  return parentIndex;
+  // printNum(current_index);
+  // printString("\n");
+  return current_index;
+}
+
+char search_parent_index(char current_index) {
+  if (current_index < 32) {
+    return sector_file_1[current_index*16];
+  } else {
+    return sector_file_2[current_index*16 - 32*16];
+  }
+}
+
+void process_dotdot_inPath(char *path) {
+  char nama_file[15];
+  char new_path[100];
+  int idx_path = 1;
+  int idx_new_path = 1;
+  int i = 0;
+  new_path[0] = '\0';
+  strcat(new_path, "/");
+  while (1) {
+    i = 0;
+    while (path[idx_path] != '/' && path[idx_path] != '\0') {
+      nama_file[i] = path[idx_path];
+      idx_path++;
+      i++;
+    }
+    nama_file[i] = '\0';
+
+    if (strcmp(nama_file, "..")) {
+      if (nama_file[1] == '\0') {
+
+      } else {
+        idx_new_path = strlen(new_path);
+        while (new_path[idx_new_path] != '/') {
+          idx_new_path--;
+        }
+        if (idx_new_path > 1) {
+          new_path[idx_new_path] = '\0';
+        } else {
+          new_path[1] = '\0';
+        }
+      }
+    } else {
+      printString(nama_file);
+      printString(" ");
+      printString(new_path);
+      printString(" ");
+      if (idx_new_path > 1) {
+        strcat(new_path, "/");
+      }
+      strcat(new_path, nama_file);
+      printString(new_path);
+      printString("\n");
+    }
+    if (path[idx_path] == '\0') break;
+    idx_path++;
+    idx_new_path++;
+  }
+  path[initialize_array(path, new_path)] = '\0';
+  // printString(new_path);
+  // printString("\n");
 }
 
 void listAll(char parentIndex) {
@@ -459,12 +523,14 @@ void makeFile(char *buffer, char *path) {
       idx_to_file++;
     }
     folder_name[idx_to_file] = '\0';
+
+    // jika path yang sekarang adalah nama file tersebut maka selesai pencarian atau pembuatan folder
     if (path[idx_path] == '.') break;
 
     // mencari nama folder pada sector files yang akan menjadi parent bagi folder selanjutnya atau file selanjutnya
     idx_to_file = 0;
     while (idx_to_file < 32) {
-      if (sector_map[11+idx_to_file] == 0xFF && parentIndex == sector_file_2[idx_to_file*16 - 32*16] && 
+      if (sector_map[11+idx_to_file] == 0xFF && parentIndex == sector_file_1[idx_to_file*16] && 
           strcmp(folder_name, &sector_file_1[idx_to_file*16+2])) {
         break;
       }
@@ -484,7 +550,7 @@ void makeFile(char *buffer, char *path) {
 
     // jika nama folder sudah ketemu
     if (idx_to_file < 64) {
-      parentIndex = idx;
+      parentIndex = idx_to_file;
     } else {
       // jika belum ada, maka buat folder terlebih dahulu
       if (idx < 32) {
@@ -501,15 +567,20 @@ void makeFile(char *buffer, char *path) {
         sector_map[11+idx] = 0xFF;
       }
       parentIndex = idx;
-      printString("parent: ");
-      printNum(parentIndex);
-      printString("\n");
+      // printString("parent: ");
+      // printNum(parentIndex);
+      // printString("\n");
 
     }
     idx_path++;
   }
 
-  path[initialize_array(path, folder_name)] = '\0'; 
+  path[initialize_array(path, folder_name)] = '\0';
+  printString("File: ");
+  printString(path);
+  printString("Parent: ");
+  printNum(parentIndex);
+  printString("\n");
   writeFile(buffer, path, parentIndex);
 }
 
@@ -604,29 +675,29 @@ void writeFile(char *buffer, char *path, char parentIndex) {
 // void readFile(char *buffer, char *path, int *result, char parentIndex) {
 void readFile(char *buffer, char *path, int *result, char parentIndex) {
 
-  char file_name[15];
-  int idx = 0;
+//   char file_name[15];
+//   int idx = 0;
 
-  clear(sector_map, 512);
-  readSector(sector_map, 10);
+//   clear(sector_map, 512);
+//   readSector(sector_map, 10);
 
-  clear(sector_file_1, 512);
-  readSector(sector_file_1, 11);
+//   clear(sector_file_1, 512);
+//   readSector(sector_file_1, 11);
 
-  clear(sector_file_2, 512);
-  readSector(sector_file_2, 12);
+//   clear(sector_file_2, 512);
+//   readSector(sector_file_2, 12);
 
-  clear(sector_sectors, 512);
-  readSector(sector_sectors, 13);
+//   clear(sector_sectors, 512);
+//   readSector(sector_sectors, 13);
 
-  // while (idx < 64) {
-  //   if (sector_map[11+idx] != 0xFF) {
-  //     isAdaYgKosongDiFiles = 1;
-  //   } else {
-  //     idx++;
-  //   }
-  // }
-  // sector_file_1[idx*16+2]
+//   // while (idx < 64) {
+//   //   if (sector_map[11+idx] != 0xFF) {
+//   //     isAdaYgKosongDiFiles = 1;
+//   //   } else {
+//   //     idx++;
+//   //   }
+//   // }
+//   // sector_file_1[idx*16+2]
 }
 
 int div(int x, int y) {
@@ -667,12 +738,18 @@ int strcmp (char *str1, char *str2) {
 
 void strcat(char *str1, char *str2) {
   int i = 0;
-  while (*str1 != '\0') {
-    str1++;
-  }
+  while (*str1 != '\0') { str1++; }
   while (str2[i] != '\0') {
     str1[i] = str2[i];
     i++;
   }
   str1[i] = str2[i];
+}
+
+int strlen(char *str) {
+  int i = 0;
+  while (str[i] != '\0') {
+    i++;
+  }
+  return i;
 }

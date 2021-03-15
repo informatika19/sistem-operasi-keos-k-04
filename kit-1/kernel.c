@@ -112,7 +112,6 @@ int main() {
   // printString("\n");
   // printIsiFile(read, 3*16);
   // printString("\n");
-
   // terminal
   printString("\n\n");
   while (!strcmp(read, "exit") || strlen(read) != 4) {
@@ -610,6 +609,26 @@ void writeFile(char *buffer, char *path, char parentIndex) {
 // void readFile(char *buffer, char *path, int *result, char parentIndex) {
 // membaca file
 void readFile(char *buffer, char *path, int *result, char parentIndex) {
+  int idx = 0;
+  int buffer_pointer = 0;
+
+  while(sector_file[idx*16] != parentIndex && idx < 32){
+    idx++;
+  }
+
+  if(strcmp(path, &sector_file[idx*16+2]) && strlen(path) == strlen(&sector_file[idx*16+2]) && sector_map[11+idx] == 0xFF){
+    int no_sector = idx*16+1;
+    while(sector_sectors[no_sector] != 0){
+      readSector(buffer + buffer_pointer,13);
+      buffer_pointer += 512;
+      no_sector++;
+    }
+  }
+  else{
+    printString("error message");
+    buffer = "\0";
+    result = 0;
+  }
 }
 
 int div(int x, int y) {

@@ -16,7 +16,7 @@ void readSector(char *buffer, int sector);
 void writeSector(char *buffer, int sector);
 void makeFile(char *buff, char *path);
 // void writeFile(char *buffer, char *path, int *sectors, char parentIndex);
-void writeFile(char *buffer, char *path, char parentIndex);
+void writeFile(char *buffer, char *path, int *sectors, char parentIndex);
 // void writeFile(char *buffer, char parentIndex);
 void readFile(char *buffer, char *path, int *result, char parentIndex);
 void printFile(char* buff, int file_idx);
@@ -47,16 +47,21 @@ int main() {
   writeSector(read, 11);
   writeSector(read, 12);
   writeSector(read, 13);
+  printString("\n");
+  printString(read);
   readSector(sector_map, 10);
   readSector(sector_file, 11);
   readSector(sector_file+512, 12);
   readSector(sector_sectors, 13);
+  printString(sector_map);
 
   // interrupt(0x10, 0x00*16*16+0x01, 0, 0, 0);
   // interrupt(0x10, 0x00*16*16+0x01, 0*16*16+0x01, 0, 0);
 
   // makeInterrupt21();
   // asciiPrint();
+  printString("Test");
+  printString("\n");
   printString("Your name:");
   readString(read);
   printString("\n");
@@ -67,10 +72,10 @@ int main() {
   // interrupt(0x13, 0x02*16*16+0x01, 0x1000, 0x0*16*16+0x02, 0x0*16*16+0x0);
 
   // clear(read, 16);
-  copy_arr(read, "Isi File");
-  makeFile(read, "parent111/parent2/parent3/anak.txt");
-  makeFile(read, "parent111/parent2/parent3/anak2.txt");
-  makeFile(read, "parent_2/parent2/anak4.txt");
+  //copy_arr(read, "Isi File");
+  makeFile("KUcing", "parent111/parent2/parent3/anak.txt");
+  makeFile("Aku sayang dia", "parent111/parent2/parent3/anak2.txt");
+  makeFile("Budi pergi", "parent_2/parent2/anak4.txt");
 
   // printString("Sector 100\n");
   // clear(read, 100);
@@ -83,7 +88,7 @@ int main() {
   // readSector(read, 11);
   // // printStringLength(read, 50);
   // // printString("\n");
-  // printFile(read, 0);
+  printFile(read, 0);
   // printString("\n");
   // printFile(read, 0x10);
   // printString("\n");
@@ -173,7 +178,25 @@ int main() {
       }
 
     } else if (strcmp(read, "cat ")) {
-      
+        int i = 0;
+        if (read[4] != '\0'){
+          for (; i < 10 ; i++){
+            // printNum(i);
+            // printString("\n");
+            // if (sector_sectors[i] != "\0");
+            //   printString(&sector_sectors[i*16]);
+            // printString("\n");
+
+            if (sector_map[11+i] == 0xFF && sector_file[i*16] == curr_idx  && sector_file[i*16+1] != 0xFF && strcmpfitlen(&read[4],&sector_file[i*16+2])){
+              // printNum(sector_file[i*16+1]);
+              // printString("\n");
+              // printString(&sector_sectors[2]);
+              printString(&sector_sectors[sector_file[i*16+1]*16]);
+              printString("\n");
+              break;
+            }
+          }
+        }
     } else {
       printString("Command not found\n");
     }
@@ -454,6 +477,7 @@ void listAll(char parentIndex) {
 // membuat folder/file
 void makeFile(char *buff, char *path) {
   char parentIndex = 0xFF;
+  int *sectors = 0;
   {
     char folder_name[15];
     int isAdaYgKosongDiFiles, idx_to_file, idx_path = 0, idx;
@@ -530,21 +554,25 @@ void makeFile(char *buff, char *path) {
     // printNum(parentIndex);
     // printString("\n");
   }
-  writeFile(buff, path, parentIndex);
+  writeFile(buff, path, sectors, parentIndex);
 }
 
 // void writeFile(char *buffer, char *path, int *sectors, char parentIndex) {
 // menulis file
-void writeFile(char *buffer, char *path, char parentIndex) {
+void writeFile(char *buffer, char *path, int *sectors, char parentIndex) {
   int idx = 0, isAdaYgKosongDiFiles = 0, isAdaYgKosongDiSectors = 0, idx_file = 0;
   // tanda ada yang kosong pada sektor files
   isAdaYgKosongDiFiles = 0;
   while (isAdaYgKosongDiFiles == 0 && idx < 64) {
-    if (sector_map[11+idx] != 0xFF)
-      isAdaYgKosongDiFiles = 1;
-    else
-      idx++;
+    if (sector_map[11+idx] != 0xFF){
+      isAdaYgKosongDiFiles = 1;}
+    else{
+      idx++;}
   }
+  if (!isAdaYgKosongDiFiles) {
+    sectors = -2;
+  }
+
 
   // tanda ada yang kosong pada sektor sectors
   isAdaYgKosongDiSectors = 0;
@@ -554,6 +582,9 @@ void writeFile(char *buffer, char *path, char parentIndex) {
     } else {
       idx_file++;
     }
+  }
+  if (!isAdaYgKosongDiFiles) {
+    sectors = -3;
   }
 
   // printString("idx: ");
@@ -631,6 +662,27 @@ void readFile(char *buffer, char *path, int *result, char parentIndex) {
   }
 }
 
+void readFile1(char *buffer, char *path, int *result, char parentIndex) {
+  int idx = 0;
+  int buffer_pointer = 0;
+
+  while(sector_file[idx*16] != parentIndex && idx < 32){
+    idx++;
+  }
+
+  if(strcmp(path, &sector_file[idx*16+2]) && strlen(path) == strlen(&sector_file[idx*16+2]) && sector_map[11+idx] == 0xFF){
+    int no_sector = idx*16+1;
+
+
+  }
+  else{
+    printString("error message");
+    buffer = "\0";
+    result = 0;
+  }
+}
+
+
 int div(int x, int y) {
   return x/y;
 }
@@ -661,9 +713,22 @@ void printNum(int c) {
 int strcmp (char *str1, char *str2) {
   int i = 0;
   while (str1[i] != '\0' && str2[i] != '\0') {
-    if (str1[i++] != str2[i]) return 0;
+    if (str1[i++] != str2[i]) {return 0;};
   }
   return 1;
+}
+
+
+// membandingkan dua array sampai jika ada null character pada array 1 atau array 2. Tambah syarat panjang string
+int strcmpfitlen (char *str1, char *str2) {
+  int i = 0;
+  if (strlen(str1) == strlen(str2)){
+    while (str1[i] != '\0' && str2[i] != '\0') {
+      if (str1[i++] != str2[i]) {return 0;};
+    }
+    return 1;
+  }
+  else {return 0;}
 }
 
 // menggabungkan array 2 ke array 1 sampai null character pada array 2

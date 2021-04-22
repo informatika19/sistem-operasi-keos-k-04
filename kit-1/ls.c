@@ -1,3 +1,4 @@
+#include "fileio.h"
 // list semua file 
 void listAll(char parentIndex) {
   int idx_to_file = 0;

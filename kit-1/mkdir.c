@@ -1,4 +1,4 @@
-
+#include "fileio.h"
 // membuat folder/file
 void makeFile(char *buff, char *path) {
   char parentIndex = 0xFF;

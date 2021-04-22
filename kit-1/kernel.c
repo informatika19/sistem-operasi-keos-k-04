@@ -1,4 +1,9 @@
-// /* Ini deklarasi fungsi */
+#include "fileio.h"
+#include "ls.h"
+#include "mkdir.h"
+#include "text.h"
+
+/* Ini deklarasi fungsi */
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
 char search_curr_idx(char *path, char parentIndex);
 char search_parent_idx(char curr_idx);
@@ -27,14 +32,14 @@ int main() {
 
   // makeInterrupt21();
   // asciiPrint();
-  printString("Test");
-  printString("\n");
-  printString("Your name:");
-  readString(read);
-  printString("\n");
-  printString("Selamat datang, ");
-  printString(read);
-  printString("\n");
+  // printString("Test");
+  // printString("\n");
+  // printString("Your name:");
+  // readString(read);
+  // printString("\n");
+  // printString("Selamat datang, ");
+  // printString(read);
+  // printString("\n");
   // printString("---------------------\n");
   // interrupt(0x13, 0x02*16*16+0x01, 0x1000, 0x0*16*16+0x02, 0x0*16*16+0x0);
 
@@ -229,7 +234,10 @@ char search_curr_idx(char *path, char curr_idx) {
 
 // mencari index parent pada file/folder di sektor files
 char search_parent_idx(char curr_idx) {
-  return sector_file[curr_idx*16];
+  // agar tidak circular
+  if (curr_idx != 0xFF)
+    return sector_file[curr_idx*16];
+  return 0xFF;
 }
 
 void process_dotdot_inPath(char *path) {

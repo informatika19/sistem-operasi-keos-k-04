@@ -1,3 +1,4 @@
+#include "fileio.h"
 // membaca sektor
 void readSector(char *buffer, int sector) {
   /*

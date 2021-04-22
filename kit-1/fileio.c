@@ -1,4 +1,5 @@
 #include "fileio.h"
+#include "text.h"
 // membaca sektor
 void readSector(char *buffer, int sector) {
   /*
@@ -125,10 +126,10 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex) {
   // printString("\n");
 
   // tulis pada sector map, files, dan sectors
-  writeSector(sector_map, 10);
-  writeSector(sector_file, 11);
-  writeSector(sector_file+512, 12);
-  writeSector(sector_sectors, 13);
+  writeSector(sector_map, 5);
+  writeSector(sector_file, 6);
+  writeSector(sector_file+512, 7);
+  writeSector(sector_sectors, 8);
 }
 
 // void readFile(char *buffer, char *path, int *result, char parentIndex) {

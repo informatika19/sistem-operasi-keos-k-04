@@ -1,3 +1,5 @@
+#include "text.h"
+#include "math.h"
 // membaca input, masukkan pada string
 void readString(char *str) {
   char *cc = str-1;
@@ -51,11 +53,11 @@ void printStringToNumLength(char *str, int length) {
 
 void printFile(char* buff, int file_idx) {
   // print parent file
-  printNum(buff[file_idx]);
+  printNum(buff[file_idx*16]);
   // print index pada sectors
-  printNum(buff[file_idx+1]);
+  printNum(buff[file_idx*16+1]);
   // print nama file
-  printStringLength(&buff[file_idx+2], 16);
+  printStringLength(&buff[file_idx*16+2], 14);
 }
 
 void printIsiFile(char* buff, int file_idx) {

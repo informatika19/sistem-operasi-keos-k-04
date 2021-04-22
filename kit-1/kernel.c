@@ -2,30 +2,33 @@
 #include "ls.h"
 #include "mkdir.h"
 #include "text.h"
+#include "fileoperation.h"
 
 /* Ini deklarasi fungsi */
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
-char search_curr_idx(char *path, char parentIndex);
-char search_parent_idx(char curr_idx);
+// char search_curr_idx(char *path, char parentIndex);
+// char search_parent_idx(char curr_idx);
 void process_dotdot_inPath(char *path);
 
-char sector_map[512], sector_file[1024], sector_file_2[512], sector_sectors[512];
+
+// char sector_map[512], sector_file[1024], sector_sectors[512];
 int main() {
-  char read[512], curr_path[70], curr_idx = 0xFF, result_idx;
+  char read[512], curr_path[70], curr_idx = 0xFF;
+  char result_idx[1];
 
   copy_arr(curr_path, "/\0");
   clear(read, 512);
-  writeSector(read, 10);
-  writeSector(read, 11);
-  writeSector(read, 12);
-  writeSector(read, 13);
+  writeSector(read, 5);
+  writeSector(read, 6);
+  writeSector(read, 7);
+  writeSector(read, 8);
   printString("\n");
   printString(read);
-  readSector(sector_map, 10);
-  readSector(sector_file, 11);
-  readSector(sector_file+512, 12);
-  readSector(sector_sectors, 13);
-  printString(sector_map);
+  readSector(sector_map, 5);
+  readSector(sector_file, 6);
+  readSector(sector_file+512, 7);
+  readSector(sector_sectors, 8);
+  // printString(sector_map);
 
   // interrupt(0x10, 0x00*16*16+0x01, 0, 0, 0);
   // interrupt(0x10, 0x00*16*16+0x01, 0*16*16+0x01, 0, 0);
@@ -48,6 +51,10 @@ int main() {
   makeFile("KUcing", "parent111/parent2/parent3/anak.txt");
   makeFile("Aku sayang dia", "parent111/parent2/parent3/anak2.txt");
   makeFile("Budi pergi", "parent_2/parent2/anak4.txt");
+  // printFile(sector_file, 0);
+  // printFile(sector_file, 1);
+  // printFile(sector_file, 2);
+  // printFile(sector_file, 3);
 
   // printString("Sector 100\n");
   // clear(read, 100);
@@ -60,7 +67,7 @@ int main() {
   // readSector(read, 11);
   // // printStringLength(read, 50);
   // // printString("\n");
-  printFile(read, 0);
+  // printFile(read, 0);
   // printString("\n");
   // printFile(read, 0x10);
   // printString("\n");
@@ -110,13 +117,13 @@ int main() {
         if (read[3] == '/') {
           // path dari root
           if (read[4] != '\0') {
-            result_idx = search_curr_idx(&read[4], 0xFF);
+            search_curr_idx(&read[4], 0xFF, result_idx);
             // jika ada file yg tidak ketemu maka dilewati
-            if (result_idx == 0xFA) {
+            if (result_idx[0] == 0xFA) {
               printString("Directory not found\n");
               continue;
             } else {
-              curr_idx = result_idx;
+              curr_idx = result_idx[0];
             }
           } else {
             curr_idx = 0xFF;
@@ -127,21 +134,22 @@ int main() {
           strcat(curr_path, &read[3]);
           process_dotdot_inPath(&curr_path);
         } else {
+          // jika index lama bukan root
+          if (curr_idx != 0xFF) {
+            strcat(curr_path, "/");
+          }
           // path relatif
-          result_idx = search_curr_idx(&read[3], curr_idx);
+          search_curr_idx(&read[3], curr_idx, result_idx);
           // jika ada file yg tidak ketemu maka dilewati
-          if (result_idx == 0xFA) {
+          if (result_idx[0] == 0xFA) {
             printString("Directory not found\n");
             continue;
           } else {
-            curr_idx = result_idx;
-          }
-          // jika index lama bukan root
-          if (result_idx != 0xFF) {
-            strcat(curr_path, "/");
+            curr_idx = result_idx[0];
           }
           // copy path terbaru
           strcat(curr_path, &read[3]);
+          // printString(curr_path);
           process_dotdot_inPath(&curr_path);
         }
       }
@@ -166,6 +174,8 @@ int main() {
             }
           }
         }
+    } else if (strcmp(read, "mkdir ")) {
+      mkdir(&read[6], curr_idx);
     } else {
       printString("Command not found\n");
     }
@@ -187,98 +197,52 @@ void handleInterrupt21 (int AX, int BX, int CX, int DX){
   }
 }
 
-// mencari index dari folder/file tersebut pada sektor files
-char search_curr_idx(char *path, char curr_idx) {
-  char old_curr_idx = curr_idx, parentIndex, folder_name[15];
-  int idx_to_file, idx_path = 0;
-
-  while (1) {
-    // menyalin nama folder sampai folder selanjutnya atau menyalin nama file sampai titik
-    idx_to_file = 0;
-    while (path[idx_path] != '/' && path[idx_path] != '\0') {
-      folder_name[idx_to_file] = path[idx_path];
-      idx_path++;
-      idx_to_file++;
-    }
-    folder_name[idx_to_file] = '\0';
-
-    if (strcmp(folder_name, "..") ) {
-      if (folder_name[0] != '\0' && folder_name[1] != '\0')
-        curr_idx = search_parent_idx(curr_idx);
-    } else {
-      // mencari nama folder pada sector files yang akan menjadi parent bagi folder selanjutnya atau file selanjutnya
-      parentIndex = curr_idx;
-      for (idx_to_file = 0; idx_to_file < 64; idx_to_file++) {
-        if (sector_map[11+idx_to_file] == 0xFF && parentIndex == sector_file[idx_to_file*16] && 
-            strcmp(folder_name, &sector_file[idx_to_file*16+2]) && strlen(folder_name) == strlen(&sector_file[idx_to_file*16+2])) {
-          break;
-        }
-      }
-
-      // jika nama folder sudah ketemu
-      // index dari folder tersebut ketemu
-      if (idx_to_file < 64)
-        curr_idx = idx_to_file;
-      else
-        // jika tidak ketemu maka kembalikan nilai -xFA
-        return 0xFA;
-    }
-
-    if (path[idx_path] == '\0') break;
-    idx_path++;
-  }
-  // printNum(curr_idx);
-  // printString("\n");
-  return curr_idx;
-}
-
-// mencari index parent pada file/folder di sektor files
-char search_parent_idx(char curr_idx) {
-  // agar tidak circular
-  if (curr_idx != 0xFF)
-    return sector_file[curr_idx*16];
-  return 0xFF;
-}
 
 void process_dotdot_inPath(char *path) {
-  char nama_file[15], new_path[100];
-  int idx_path = 1, idx_new_path = 1, i = 0;
+  char folder[15], new_path[100];
+  int i_path = 1, i_new_path = 1, i = 0;
   new_path[0] = '\0';
   strcat(new_path, "/");
+  clear(folder, 15);
   while (1) {
-    i = 0;
-    while (path[idx_path] != '/' && path[idx_path] != '\0') {
-      nama_file[i] = path[idx_path];
-      idx_path++;
-      i++;
-    }
-    nama_file[i] = '\0';
+    // i = 0;
+    // while (path[i_path] != '/' && path[i_path] != '\0') {
+    //   folder[i] = path[i_path];
+    //   i_path++;
+    //   i++;
+    // }
+    // folder[i] = '\0';
 
-    if (strcmp(nama_file, "..")) {
-      if (nama_file[1] == '\0') {
+    copy_dir(path, folder, &i_path);
+
+    if (strcmp(folder, "..")) {
+      if (folder[1] == '\0') {
 
       } else {
-        idx_new_path = strlen(new_path);
-        while (new_path[idx_new_path] != '/') {
-          idx_new_path--;
+        i_new_path = strlen(new_path);
+        while (new_path[i_new_path] != '/') {
+          i_new_path--;
         }
-        if (idx_new_path > 1) {
-          new_path[idx_new_path] = '\0';
+        if (i_new_path > 1) {
+          new_path[i_new_path] = '\0';
         } else {
           new_path[1] = '\0';
         }
       }
     } else {
-      if (idx_new_path > 1) {
+      if (i_new_path > 1) {
         strcat(new_path, "/");
       }
-      strcat(new_path, nama_file);
+      strcat(new_path, folder);
     }
-    if (path[idx_path] == '\0') break;
-    idx_path++;
-    idx_new_path++;
+    if (path[i_path] == '\0') break;
+    i_path++;
+    i_new_path++;
   }
-  path[copy_arr(path, new_path)] = '\0';
+  copy_arr_length(path, new_path, i_new_path);
+  // path[i_new_path] = '\0';
+  // printString(new_path);
+  // path[copy_arr(path, new_path)] = '\0';
 }
 
 

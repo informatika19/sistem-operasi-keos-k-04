@@ -6,17 +6,15 @@
 
 /* Ini deklarasi fungsi */
 void handleInterrupt21 (int AX, int BX, int CX, int DX);
-// char search_curr_idx(char *path, char parentIndex);
-// char search_parent_idx(char curr_idx);
 void process_dotdot_inPath(char *path);
-
+int mv(char *cmd, char curr_idx);
 
 // char sector_map[512], sector_file[1024], sector_sectors[512];
 int main() {
   char read[512], curr_path[70], curr_idx = 0xFF;
   char result_idx[1];
 
-  copy_arr(curr_path, "/\0");
+  copy_arr(curr_path, "/\0", 0);
   clear(read, 512);
   writeSector(read, 5);
   writeSector(read, 6);
@@ -33,7 +31,7 @@ int main() {
   // interrupt(0x10, 0x00*16*16+0x01, 0, 0, 0);
   // interrupt(0x10, 0x00*16*16+0x01, 0*16*16+0x01, 0, 0);
 
-  // makeInterrupt21();
+  makeInterrupt21();
   // asciiPrint();
   // printString("Test");
   // printString("\n");
@@ -47,7 +45,7 @@ int main() {
   // interrupt(0x13, 0x02*16*16+0x01, 0x1000, 0x0*16*16+0x02, 0x0*16*16+0x0);
 
   // clear(read, 16);
-  //copy_arr(read, "Isi File");
+  //copy_arr(read, "Isi File", false);
   makeFile("KUcing", "parent111/parent2/parent3/anak.txt");
   makeFile("Aku sayang dia", "parent111/parent2/parent3/anak2.txt");
   makeFile("Budi pergi", "parent_2/parent2/anak4.txt");
@@ -164,7 +162,8 @@ int main() {
             //   printString(&sector_sectors[i*16]);
             // printString("\n");
 
-            if (sector_map[11+i] == 0xFF && sector_file[i*16] == curr_idx  && sector_file[i*16+1] != 0xFF && strcmpfitlen(&read[4],&sector_file[i*16+2])){
+            if (sector_map[11+i] == 0xFF && sector_file[i*16] == curr_idx  && sector_file[i*16+1] != 0xFF 
+              && strcmpfitlen(&read[4],&sector_file[i*16+2])){
               // printNum(sector_file[i*16+1]);
               // printString("\n");
               // printString(&sector_sectors[2]);
@@ -176,6 +175,10 @@ int main() {
         }
     } else if (strcmp(read, "mkdir ")) {
       mkdir(&read[6], curr_idx);
+    } else if (strcmp(read, "mv ")) {
+      if (mv(&read[3], curr_idx) == 0) {
+        printString("Command mv failed!\n");
+      }
     } else {
       printString("Command not found\n");
     }
@@ -213,37 +216,86 @@ void process_dotdot_inPath(char *path) {
     // }
     // folder[i] = '\0';
 
-    copy_dir(path, folder, &i_path);
+    copy_dir(folder, path, &i_path);
 
     if (strcmp(folder, "..")) {
       if (folder[1] == '\0') {
 
       } else {
-        i_new_path = strlen(new_path);
+        // i_new_path = strlen(new_path);
+        i_new_path--;
         while (new_path[i_new_path] != '/') {
           i_new_path--;
         }
-        if (i_new_path > 1) {
-          new_path[i_new_path] = '\0';
-        } else {
-          new_path[1] = '\0';
-        }
+        // if (i_new_path > 1) {
+        //   new_path[i_new_path] = '\0';
+        // } else {
+        //   new_path[1] = '\0';
+        // }
       }
     } else {
       if (i_new_path > 1) {
-        strcat(new_path, "/");
+        // strcat(new_path, "/");
+        // i_new_path++;
+        new_path[i_new_path++] = '/';
       }
-      strcat(new_path, folder);
+      // printString(folder);
+      i_new_path += copy_arr(&new_path[i_new_path], folder, 0);
+      // strcat(new_path, folder);
+      // printString("new path process:");
+      // printString(new_path);
     }
-    if (path[i_path] == '\0') break;
-    i_path++;
-    i_new_path++;
+    if (path[i_path++] == '\0') break;
+    // i_new_path++;
   }
-  copy_arr_length(path, new_path, i_new_path);
+  if (i_new_path > 1) {
+    copy_arr_length(path, new_path, i_new_path, 1);
+  } else {
+    path[1] = '\0';
+  }
+  // printString("newPath:");
+  // printString(new_path);
+  // printString("||");
+  // printNum(i_new_path);
+  // path[copy_arr(path, new_path, 1)] ;
+  // copy_arr_length(path, new_path, i_new_path, 1);
   // path[i_new_path] = '\0';
   // printString(new_path);
-  // path[copy_arr(path, new_path)] = '\0';
+  // path[copy_arr(path, new_path, 1)] = '\0';
 }
 
+int mv(char *cmd, char curr_idx) {
+  char file_folder[14], folder[14];
+  char parent_idx = curr_idx;
+  int i = 0, j=0;
+  int i_file_folder = 0, i_folder = 0;
 
+  // mengkopi argumen 1 ke file_folder
+  while (cmd[i] != ' ' && cmd[i] != '\0' && i < 14)
+    file_folder[i++] = cmd[i];
+  file_folder[i] = '\0';
+  // menyelesaikan argumen 1 jika terlalu panjang
+  while (cmd[i] != ' ' && cmd[i] != '\0') i++;
+  // jika argumen hanya satu maka mv tidak bekerja
+  if (cmd[i] == '\0') return 0;
+  copy_arr(folder, &cmd[i+1], 1);
+  
+  // search file/folder index
+  i_file_folder = search_folder_idx(file_folder, parent_idx);
 
+  // search folder index
+  i_folder = search_folder_idx(folder, parent_idx);
+
+  // jika file/folder yang ingin dipindahkan tidak ada maka mv tidak bisa
+  if (i_file_folder >= 64) return 0;
+  
+  // jika tempat file/folder berpindah ada
+  if (i_folder < 64) {
+    // change parentIndex for file_folder
+    sector_file[i_file_folder*16] = i_folder;
+  } else {
+    // jika tidak, maka cukup beri nama file/folder yg ingin dipindahkan tersebut.
+    copy_arr_length(&sector_file[i_file_folder*16+2], folder, 14, 0);
+  }
+  return 1;
+}

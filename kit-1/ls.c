@@ -2,14 +2,14 @@
 #include "text.h"
 #include "ls.h"
 // list semua file 
-void listAll(char parentIndex) {
-  int idx_to_file = 0;
+void listAll(char parent_idx) {
+  int i_file = 0;
   // printString("ls--");
-  // printString("parentIndex:");
-  // printNum(parentIndex);
-  for (; idx_to_file < 64; idx_to_file++) {
-    if (sector_map[11+idx_to_file] == 0xFF && parentIndex == sector_file[idx_to_file*16]) {
-      printString(&sector_file[idx_to_file*16+2]);
+  // printString("parent_idx:");
+  // printNum(parent_idx);
+  for (; i_file < 64; i_file++) {
+    if (sector_map[11+i_file] == 0xFF && parent_idx == sector_file[i_file*16]) {
+      printString(&sector_file[i_file*16+2]);
       printString("\n");
     }
   }

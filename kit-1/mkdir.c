@@ -4,7 +4,7 @@
 #include "text.h"
 // membuat direktori
 char mkdir(char *path, char curr_idx) {
-  char parentIndex = curr_idx;
+  char parent_idx = curr_idx;
 
   char folder[14];
   int i, i_path = 0, i_file;
@@ -13,8 +13,9 @@ char mkdir(char *path, char curr_idx) {
   clear(folder, 14);
   
   curr_idx = search_curr_idx(path, curr_idx, result_idx);
+  parent_idx = curr_idx;
+  // jika directory belum ada maka dibuat sebanyak directory yg belum
   if (result_idx[0] == 0xFA) {
-    // printString("Not Exist");
     while (1) {
       // jika file penuh maka file tidak dibuat
       if (isFileFull(&i_file) == 1) return;
@@ -24,42 +25,42 @@ char mkdir(char *path, char curr_idx) {
       //   i_path++;
       //   idx_to_file++;
       // }
+
       // proses directory 
-      i = copy_dir(path, folder, &i_path);
-      while (i < 14) {
-        folder[i++] = '\0';
-      }
+      i = copy_dir(folder, path, &i_path);
+      clear(&folder[i], 14-i);
       // printString(folder);
+
       // buat folder
       // menulis parent dari folder/file
-      sector_file[i_file*16] = parentIndex;
+      sector_file[i_file*16] = parent_idx;
 
       // menulis nama folder/file pada sektor files
       copy_arr_length(&sector_file[i_file*16+2], folder, 14);
       // printString(&sector_file[i_file*16+2]);
+
       // tandai  di map
       sector_map[11+i_file] = 0xFF;
 
       // index sekarang akan menjadi parent untuk folder anaknya
-      parentIndex = i_file;
+      parent_idx = i_file;
 
       if (path[i_path] == '\0') break;
 
       i_path++;
     }
   } else {
-    parentIndex = curr_idx;
+    return curr_idx;
   }
 
-  return parentIndex;
+  return parent_idx;
 }
 
 // membuat folder/file
 void makeFile(char *buff, char *path) {
-  char parentIndex = 0xFF;
+  char parent_idx = 0xFF;
   int *sectors = 0;
-  int i_path = 0;
-  int len = 0;
+  int i_path = 0, len = 0;
   char file[14];
   char *dir;
   while (path[i_path] != '.') {
@@ -73,7 +74,7 @@ void makeFile(char *buff, char *path) {
   copy_arr_length(dir, path, i_path);
   dir[i_path] = '\0';
   if (path[i_path] == '/')
-    parentIndex = mkdir(dir, parentIndex);
+    parent_idx = mkdir(dir, parent_idx);
 
   // copy file name and write file
   len--;
@@ -82,5 +83,5 @@ void makeFile(char *buff, char *path) {
   }
   copy_arr_length(file, &path[i_path+1], 14);
   // write to file
-  writeFile(buff, file, sectors, parentIndex);
+  writeFile(buff, file, sectors, parent_idx);
 }

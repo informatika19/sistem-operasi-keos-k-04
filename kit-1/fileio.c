@@ -55,27 +55,27 @@ void writeSector(char *buffer, int sector) {
 
 // menulis file
 void writeFile(char *buffer, char *path, int *sectors, char parentIndex) {
-  int idx = 0, isAdaYgKosongDiFiles = 0, isAdaYgKosongDiSectors = 0, idx_file = 0;
+  int idx = 0, isAdaYgKosongDiFiles = 1, isAdaYgKosongDiSectors = 0, i_file = 0;
   // tanda ada yang kosong pada sektor files
-  isAdaYgKosongDiFiles = 0;
-  while (isAdaYgKosongDiFiles == 0 && idx < 64) {
-    if (sector_map[11+idx] != 0xFF){
-      isAdaYgKosongDiFiles = 1;}
-    else{
-      idx++;}
-  }
+  if (isFileFull(&idx))
+    isAdaYgKosongDiFiles = 0;
+  // while (isAdaYgKosongDiFiles == 0 && idx < 64) {
+  //   if (sector_map[11+idx] != 0xFF){
+  //     isAdaYgKosongDiFiles = 1;}
+  //   else{
+  //     idx++;}
+  // }
   if (!isAdaYgKosongDiFiles) {
     sectors = -2;
   }
 
 
   // tanda ada yang kosong pada sektor sectors
-  isAdaYgKosongDiSectors = 0;
-  while(isAdaYgKosongDiSectors == 0 && idx_file < 32) {
-    if (sector_map[75+idx_file] != 0xFF) {
+  while(isAdaYgKosongDiSectors == 0 && i_file < 64) {
+    if (sector_map[75+i_file] != 0xFF) {
       isAdaYgKosongDiSectors = 1;
     } else {
-      idx_file++;
+      i_file++;
     }
   }
   if (!isAdaYgKosongDiFiles) {
@@ -103,14 +103,15 @@ void writeFile(char *buffer, char *path, int *sectors, char parentIndex) {
     sector_file[idx] = parentIndex;
 
     // nulis index di sectors pada sector files
-    sector_file[idx+1] = idx_file;
+    sector_file[idx+1] = i_file;
 
     // menulis nama file
-    sector_file[copy_arr(&sector_file[idx+2], path)+idx+2] = '\0';  // max 14 character
+    copy_arr_length(&sector_file[idx+2], path, 14);
+    // sector_file[copy_arr(&sector_file[idx+2], path)+idx+2] = '\0';  // max 14 character
 
     // menulis isi file
-    copy_arr_length(&sector_sectors[idx_file*16], buffer, 16);
-    sector_map[75+idx_file] = 0xFF;
+    copy_arr_length(&sector_sectors[i_file*16], buffer, 16);
+    sector_map[75+i_file] = 0xFF;
   }
 
   // printString("Sector Map\n");
@@ -157,22 +158,22 @@ void readFile(char *buffer, char *path, int *result, char parentIndex) {
   }
 }
 
-void readFile1(char *buffer, char *path, int *result, char parentIndex) {
-  int idx = 0;
-  int buffer_pointer = 0;
+// void readFile1(char *buffer, char *path, int *result, char parentIndex) {
+//   int idx = 0;
+//   int buffer_pointer = 0;
 
-  while(sector_file[idx*16] != parentIndex && idx < 32){
-    idx++;
-  }
+//   while(sector_file[idx*16] != parentIndex && idx < 32){
+//     idx++;
+//   }
 
-  if(strcmp(path, &sector_file[idx*16+2]) && strlen(path) == strlen(&sector_file[idx*16+2]) && sector_map[11+idx] == 0xFF){
-    int no_sector = idx*16+1;
+//   if(strcmp(path, &sector_file[idx*16+2]) && strlen(path) == strlen(&sector_file[idx*16+2]) && sector_map[11+idx] == 0xFF){
+//     int no_sector = idx*16+1;
 
 
-  }
-  else{
-    printString("error message");
-    buffer = "\0";
-    result = 0;
-  }
-}
+//   }
+//   else{
+//     printString("error message");
+//     buffer = "\0";
+//     result = 0;
+//   }
+// }

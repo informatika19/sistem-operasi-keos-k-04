@@ -14,9 +14,10 @@ int isFileFull(int *idx) {
 }
 
 // mencari index dari folder/file tersebut pada sektor files
-char search_curr_idx(char *path, char curr_idx, char *result_idx) {
+char search_curr_idx(char *path, char *i_path, char curr_idx, char *result_idx) {
   char old_curr_idx = curr_idx, parent_idx, folder[15];
-  int i_file, i_path = 0;
+  int i_file;
+  char old_i_path = *i_path;
 
   while (1) {
     // menyalin nama folder sampai folder selanjutnya atau menyalin nama file sampai titik
@@ -27,7 +28,7 @@ char search_curr_idx(char *path, char curr_idx, char *result_idx) {
     //   i_file++;
     // }
     // folder[i_file] = '\0';
-    i_file = copy_dir(folder, path, &i_path);
+    i_file = copy_dir(folder, path, i_path);
 
     if (strcmp(folder, "..") ) {
       if (folder[0] != '\0' && folder[1] != '\0')
@@ -51,6 +52,12 @@ char search_curr_idx(char *path, char curr_idx, char *result_idx) {
       else {
         // jika tidak ketemu maka nilai result idx = 0xFA
         result_idx[0] = 0xFA;
+        if (old_curr_idx == curr_idx) {
+          *i_path = old_i_path;
+        } else {
+          while (path[*i_path] != '/') { (*i_path)--; }
+          (*i_path)++;
+        }
         // kembalikan nilai index terakhir dicari
         // printString("curr_idx:");
         // printNum(curr_idx);
@@ -58,8 +65,8 @@ char search_curr_idx(char *path, char curr_idx, char *result_idx) {
       }
     }
 
-    if (path[i_path] == '\0') break;
-    i_path++;
+    if (path[(*i_path)] == '\0') break;
+    (*i_path)++;
   }
   // printNum(curr_idx);
   // printString("\n");

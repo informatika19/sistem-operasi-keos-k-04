@@ -11,8 +11,16 @@ char mkdir(char *path, char curr_idx) {
   char result_idx[1];
 
   clear(folder, 14);
-  
-  curr_idx = search_curr_idx(path, curr_idx, result_idx);
+
+  if (path[0] == '/') {
+    curr_idx = 0xFF;
+    i_path++;
+  }
+  // printString("pathb");
+  // printNum(i_path);
+  curr_idx = search_curr_idx(&path[i_path], &i_path, curr_idx, result_idx);
+  // printString("i_path");
+  // printNum(i_path);
   parent_idx = curr_idx;
   // jika directory belum ada maka dibuat sebanyak directory yg belum
   if (result_idx[0] == 0xFA) {

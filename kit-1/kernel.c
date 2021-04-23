@@ -11,7 +11,7 @@ int mv(char *cmd, char curr_idx);
 
 // char sector_map[512], sector_file[1024], sector_sectors[512];
 int main() {
-  char read[512], curr_path[70], curr_idx = 0xFF;
+  char read[512], curr_path[70], curr_idx = 0xFF, i_path;
   char result_idx[1];
 
   copy_arr(curr_path, "/\0", 0);
@@ -46,9 +46,9 @@ int main() {
 
   // clear(read, 16);
   //copy_arr(read, "Isi File", false);
-  makeFile("KUcing", "parent111/parent2/parent3/anak.txt");
-  makeFile("Aku sayang dia", "parent111/parent2/parent3/anak2.txt");
-  makeFile("Budi pergi", "parent_2/parent2/anak4.txt");
+  makeFile("Hallo", "docs/tah/fri/fjk.txt");
+  makeFile("Disini ada", "docs/tah/fri/lam.txt");
+  makeFile("Makan nasi", "downloads/fgh/mgd.txt");
   // printFile(sector_file, 0);
   // printFile(sector_file, 1);
   // printFile(sector_file, 2);
@@ -115,7 +115,8 @@ int main() {
         if (read[3] == '/') {
           // path dari root
           if (read[4] != '\0') {
-            search_curr_idx(&read[4], 0xFF, result_idx);
+            i_path = 0;
+            search_curr_idx(&read[4], &i_path, 0xFF, result_idx);
             // jika ada file yg tidak ketemu maka dilewati
             if (result_idx[0] == 0xFA) {
               printString("Directory not found\n");
@@ -137,7 +138,8 @@ int main() {
             strcat(curr_path, "/");
           }
           // path relatif
-          search_curr_idx(&read[3], curr_idx, result_idx);
+          i_path = 0;
+          search_curr_idx(&read[3], &i_path, curr_idx, result_idx);
           // jika ada file yg tidak ketemu maka dilewati
           if (result_idx[0] == 0xFA) {
             printString("Directory not found\n");

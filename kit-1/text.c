@@ -25,7 +25,7 @@ void printString(char *str) {
   }
 }
 
-// // mencetak string sampai panjang length
+// mencetak string sampai panjang length
 // void printStringLength(char *str, int length){
 //   int ah = 0x0e00; // 0Eh: write string pada interrupt 0x10, code Ox0e dikali 16*16 
 //                        // untuk setup AH
